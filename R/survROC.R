@@ -63,20 +63,19 @@ survROC <- function (Stime, status, marker, entry = NULL, predict.time,
       }
       else {
         wt <- exp(-(x - x.unique[j])^2/lambda^2)
+        #wt=rep(1,length(x))
       }
       s0 <- 1
       for (k in 1:length(t.evaluate)) {
-        n <- sum(wt * (entry <= t.evaluate[k]) & (times >=
-                                                    t.evaluate[k]))
-        d <- sum(wt * (entry <= t.evaluate[k]) & (times ==
-                                                    t.evaluate[k]) * (status == 1))
+        n <- sum(wt * (entry <= t.evaluate[k]) & (times >= t.evaluate[k]))
+        d <- sum(wt * (entry <= t.evaluate[k]) & (times == t.evaluate[k]) * (status == 1))
         if (n > 0)
           s0 <- s0 * (1 - d/n)
       }
       S.t.x[j] <- s0
     }
     S.all.x <- S.t.x[match(x, x.unique)]
-    n <- length(times)
+    #n <- length(times)
     Sx <- sum(S.all.x[x > cut.values])/sum(x > cut.values)
   }
   return(Sx)

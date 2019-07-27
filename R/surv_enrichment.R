@@ -346,6 +346,9 @@ surv_enrichment <- function (formula, data, hr = 0.8, end.of.trial=NULL, a=NULL,
   }
   selected.biomarker.quantiles <- selected.biomarker.quantiles[-1]
 
+  # rounding
+  nscr.orig <- ceiling(nscr.orig)
+
   # print tables
   cnames <- c("level.enrichment","prob","prob.sd",
               "n.patients","n.patients.sd",
