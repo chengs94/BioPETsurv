@@ -1,7 +1,7 @@
 # TO DO:
 ## double-sided (done 2/18)
 ## loss of follow-up
-## negative concordance
+## negative concordance (not necessary)
 
 library(survival)
 #library(PWEALL)
@@ -350,11 +350,11 @@ surv_enrichment <- function (formula, data, hr = 0.8, end.of.trial=NULL, a=NULL,
   nscr.orig <- ceiling(nscr.orig)
 
   # print tables
-  cnames <- c("level.enrichment","prob","prob.sd",
-              "n.patients","n.patients.sd",
-              "n.screened","n.screened.sd",
-              "cost","cost.sd",
-              "reduction","reduction.sd")
+  cnames <- c("level.enrichment","event.prob","event.prob.se",
+              "n.patients","n.patients.se",
+              "n.screened","n.screened.se",
+              "cost","cost.se",
+              "reduction","reduction.se")
   if (acc.fu){
     tab <- cbind(selected.biomarker.quantiles, eprob, esd, npat, sd.npat, nscr.orig, sd.nscr.orig,
                  cost, sd.cost, reduc, sd.reduc)
@@ -395,11 +395,11 @@ surv_enrichment <- function (formula, data, hr = 0.8, end.of.trial=NULL, a=NULL,
   if(print.summary.tables) print(tab)
 
   return(list(summary.table=tab,
-              event.prob=eprob,event.prob.sd=esd,
-              n.patients=npat, n.patients.sd=sd.npat,
-              num.screened=nscr.orig, num.screened.sd=sd.nscr.orig,
-              total.cost=cost, total.cost.sd=sd.cost,
-              cost.reduction=reduc, cost.reduction.sd=sd.reduc,
+              event.prob=eprob,event.prob.se=esd,
+              n.patients=npat, n.patients.se=sd.npat,
+              n.screened=nscr.orig, n.screened.se=sd.nscr.orig,
+              cost=cost, cost.se=sd.cost,
+              cost.reduction=reduc, cost.reduction.se=sd.reduc,
               response=response, biomarker=biomarker, biomarker.name=biomarker.name,
               selected.biomarker.quantiles=selected.biomarker.quantiles,
               end.of.trial=end.of.trial,

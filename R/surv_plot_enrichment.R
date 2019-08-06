@@ -4,24 +4,24 @@ library(gridExtra)
 
 surv_plot_enrichment <- function (x, km.quantiles = c(0,0.25,0.5,0.75),
                                   km.range = NULL, alt.color = NULL){
-  plot.error.bar <- as.numeric(!is.null(x$event.prob.sd))
-  reduc.error.bar <- as.numeric(!is.null(x$cost.reduction.sd))
+  plot.error.bar <- as.numeric(!is.null(x$event.prob.se))
+  reduc.error.bar <- as.numeric(!is.null(x$cost.reduction.se))
 
-  if (is.null(x$event.prob.sd))
-    x$event.prob.sd <- x$n.patients.sd <- x$num.screened.sd <- x$total.cost.sd <-
-      x$cost.reduction.sd <- rep(0,length(x$selected.biomarker.quantiles))
+  if (is.null(x$event.prob.se))
+    x$event.prob.se <- x$n.patients.se <- x$n.screened.se <- x$cost.se <-
+      x$cost.reduction.se <- rep(0,length(x$selected.biomarker.quantiles))
   if (x$acc.fu)
     x$end.of.trial <- x$a+x$f
   if (x$acc.fu==F){
-    x$cost.reduction.sd <- matrix(0,nrow=length(x$selected.biomarker.quantiles),ncol=length(x$end.of.trial))
-    if (is.null(x$total.cost.sd))
-      x$total.cost.sd <- matrix(0,nrow=length(x$selected.biomarker.quantiles),ncol=length(x$end.of.trial))
+    x$cost.reduction.se <- matrix(0,nrow=length(x$selected.biomarker.quantiles),ncol=length(x$end.of.trial))
+    if (is.null(x$cost.se))
+      x$cost.se <- matrix(0,nrow=length(x$selected.biomarker.quantiles),ncol=length(x$end.of.trial))
   }
 
   end.of.trial <- x$end.of.trial
   len.pos <- "bottom"
   if (length(end.of.trial)==1) len.pos <- "none"
-  comp.cost <- !is.null(x$total.cost)
+  comp.cost <- !is.null(x$cost)
 
   #colors
   gg_color_hue <- function(n) {
@@ -71,7 +71,7 @@ surv_plot_enrichment <- function (x, km.quantiles = c(0,0.25,0.5,0.75),
   }
 
   # 2. event rate and sd ###############
-  dat <- as.data.frame(cbind(x$selected.biomarker.quantiles, x$event.prob, x$event.prob.sd))
+  dat <- as.data.frame(cbind(x$selected.biomarker.quantiles, x$event.prob, x$event.prob.se))
   colnames(dat)[1] <- "level.enrichment"
   for (j in 1:length(x$end.of.trial)){
     colnames(dat)[1+j] <- paste(j,"prob", sep=".")
@@ -81,9 +81,9 @@ surv_plot_enrichment <- function (x, km.quantiles = c(0,0.25,0.5,0.75),
                  #varying = colnames(dat)[-1],
                  varying=list(grep("prob", colnames(dat), value=T), grep("sd", colnames(dat), value=T)),
                  times = as.character(seq(1,length(x$end.of.trial))),
-                 v.names = c("event.prob", "event.prob.sd"),
+                 v.names = c("event.prob", "event.prob.se"),
                  idvar='level.enrichment')
-  dat$ci <- 1.96*dat$event.prob.sd
+  dat$ci <- 1.96*dat$event.prob.se
   #pd <- position_dodge(0) # move them .05 to the left and right
   pd <- position_jitter()
   if (x$acc.fu == F){
@@ -107,8 +107,8 @@ surv_plot_enrichment <- function (x, km.quantiles = c(0,0.25,0.5,0.75),
     theme(plot.title = element_text(hjust = 0.5), legend.position=len.pos)
 
   # 3. total sample size
-  dat <- as.data.frame(cbind(x$selected.biomarker.quantiles, x$n.patients, x$n.patients.sd))
-  #colnames(dat) <- c("level.enrichment", "n.patients", "n.patients.sd")
+  dat <- as.data.frame(cbind(x$selected.biomarker.quantiles, x$n.patients, x$n.patients.se))
+  #colnames(dat) <- c("level.enrichment", "n.patients", "n.patients.se")
   colnames(dat)[1] <- "level.enrichment"
   for (j in 1:length(x$end.of.trial)){
     colnames(dat)[1+j] <- paste(j,"num", sep=".")
@@ -118,10 +118,10 @@ surv_plot_enrichment <- function (x, km.quantiles = c(0,0.25,0.5,0.75),
                  #varying = colnames(dat)[-1],
                  varying=list(grep("num", colnames(dat), value=T), grep("sd", colnames(dat), value=T)),
                  times = as.character(seq(1,length(end.of.trial))),
-                 v.names = c("n.patients", "n.patients.sd"),
+                 v.names = c("n.patients", "n.patients.se"),
                  idvar='level.enrichment')
   g3 <- ggplot(dat, aes(x=level.enrichment*100, y=n.patients, colour=end.of.trial)) +
-    geom_errorbar(aes(ymin=n.patients-1.96*n.patients.sd, ymax=n.patients+1.96*n.patients.sd),
+    geom_errorbar(aes(ymin=n.patients-1.96*n.patients.se, ymax=n.patients+1.96*n.patients.se),
                   width=.05*length(end.of.trial)*sd(x$selected.biomarker.quantiles*100)*plot.error.bar) +
                   #position=pd) +
     geom_line() +#position=pd) +
@@ -135,7 +135,7 @@ surv_plot_enrichment <- function (x, km.quantiles = c(0,0.25,0.5,0.75),
     theme(plot.title = element_text(hjust = 0.5), legend.position=len.pos)
 
   # 4. total patients screened
-  dat <- as.data.frame(cbind(x$selected.biomarker.quantiles, x$num.screened, x$num.screened.sd))
+  dat <- as.data.frame(cbind(x$selected.biomarker.quantiles, x$n.screened, x$n.screened.se))
   colnames(dat)[1] <- "level.enrichment"
   for (j in 1:length(x$end.of.trial)){
     colnames(dat)[1+j] <- paste(j,"num", sep=".")
@@ -144,10 +144,10 @@ surv_plot_enrichment <- function (x, km.quantiles = c(0,0.25,0.5,0.75),
   dat <- reshape(dat, direction = 'long', timevar = 'end.of.trial',
                  varying=list(grep("num", colnames(dat), value=T), grep("sd", colnames(dat), value=T)),
                  times = as.character(seq(1,length(end.of.trial))),
-                 v.names = c("n.screened", "n.screened.sd"),
+                 v.names = c("n.screened", "n.screened.se"),
                  idvar='level.enrichment')
   g4 <- ggplot(dat, aes(x=level.enrichment*100, y=n.screened, colour=end.of.trial)) +
-    geom_errorbar(aes(ymin=n.screened-1.96*n.screened.sd, ymax=n.screened+1.96*n.screened.sd),
+    geom_errorbar(aes(ymin=n.screened-1.96*n.screened.se, ymax=n.screened+1.96*n.screened.se),
                   width=.05*length(end.of.trial)*sd(x$selected.biomarker.quantiles*100)*plot.error.bar) +
                   #position=pd) +
     geom_line() +#position=pd) +
@@ -163,7 +163,7 @@ surv_plot_enrichment <- function (x, km.quantiles = c(0,0.25,0.5,0.75),
 
   if (comp.cost){
     # 5. total costs for screening and trial
-    dat <- as.data.frame(cbind(x$selected.biomarker.quantiles, x$total.cost, x$total.cost.sd))
+    dat <- as.data.frame(cbind(x$selected.biomarker.quantiles, x$cost, x$cost.se))
     colnames(dat)[1] <- "level.enrichment"
     for (j in 1:length(x$end.of.trial)){
       colnames(dat)[1+j] <- paste(j,"num", sep=".")
@@ -172,10 +172,10 @@ surv_plot_enrichment <- function (x, km.quantiles = c(0,0.25,0.5,0.75),
     dat <- reshape(dat, direction = 'long', timevar = 'end.of.trial',
                    varying=list(grep("num", colnames(dat), value=T), grep("sd", colnames(dat), value=T)),
                    times = as.character(seq(1,length(end.of.trial))),
-                   v.names = c("cost", "cost.sd"),
+                   v.names = c("cost", "cost.se"),
                    idvar='level.enrichment')
     g5 <- ggplot(dat, aes(x=level.enrichment*100, y=cost, colour=end.of.trial)) +
-      geom_errorbar(aes(ymin=cost-1.96*cost.sd, ymax=cost+1.96*cost.sd),
+      geom_errorbar(aes(ymin=cost-1.96*cost.se, ymax=cost+1.96*cost.se),
                     width=.05*length(end.of.trial)*sd(x$selected.biomarker.quantiles*100)*plot.error.bar) +
       #position=pd) +
       geom_line() +#position=pd) +
@@ -187,23 +187,23 @@ surv_plot_enrichment <- function (x, km.quantiles = c(0,0.25,0.5,0.75),
       theme(plot.title = element_text(hjust = 0.5), legend.position=len.pos)
 
     # 6. % reduction in total cost
-    dat <- as.data.frame(cbind(x$selected.biomarker.quantiles, x$cost.reduction, x$cost.reduction.sd))
+    dat <- as.data.frame(cbind(x$selected.biomarker.quantiles, x$cost.reduction, x$cost.reduction.se))
     colnames(dat)[1] <- "level.enrichment"
     for (j in 1:length(x$end.of.trial)){
       colnames(dat)[1+j] <- paste(j,"num", sep=".")
       colnames(dat)[(1+length(x$end.of.trial)+j)] <- paste(j, "sd", sep=".")
     }
     #if (reduc.error.bar){
-    #  dat <- cbind(dat,x$cost.reduction.sd)
+    #  dat <- cbind(dat,x$cost.reduction.se)
     #  colnames(dat)[j+2] <- paste(j, "sd", sep=".")
     #}
     dat <- reshape(dat, direction = 'long', timevar = 'end.of.trial',
                    varying=list(grep("num", colnames(dat), value=T), grep("sd", colnames(dat), value=T)),
                    times = as.character(seq(1,length(end.of.trial))),
-                   v.names = c("reduction", "reduction.sd"),
+                   v.names = c("reduction", "reduction.se"),
                    idvar='level.enrichment')
     g6 <- ggplot(dat, aes(x=level.enrichment*100, y=reduction*100, colour=end.of.trial)) +
-      geom_errorbar(aes(ymin=reduction*100-196*reduction.sd, ymax=reduction*100+196*reduction.sd),
+      geom_errorbar(aes(ymin=reduction*100-196*reduction.se, ymax=reduction*100+196*reduction.se),
                     width=.05*length(end.of.trial)*sd(x$selected.biomarker.quantiles*100)*reduc.error.bar) +
       #position=pd) +
       geom_line() +#position=pd) +
