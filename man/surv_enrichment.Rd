@@ -33,7 +33,7 @@ surv_enrichment(formula, data, hr = 0.8, end.of.trial=NULL, a=NULL, f=NULL,
     A scalar specifying the follow-up period of the trial, that is, all patients are followed during this period right after the accrual period.
   }
   \item{method}{
-    Character specifying which method would be used to estimate event probabilities. Choices are \code{KM} for Kaplan-Meier estimator and \code{NNE} for the nearest neighbor estimator described in Heagerty et al (2013). If \code{method = "NNE"} is specified, only fixed-length trials (instead of accrual and follow-up) and \code{cost.keeping} (instead of \code{cost.unit.keeping}) can be specified, and no standard errors will be estimated. Default is \code{KM}.
+    Character specifying which method would be used to estimate event probabilities. Choices are \code{KM} for the Kaplan-Meier estimator and \code{NNE} for the nearest neighbor estimator described in Heagerty et al (2000). Algorithm of NNE was adapted from the code in the \code{survivalROC} R package. If \code{method = "NNE"} is specified, only fixed-length trials (instead of accrual and follow-up) and \code{cost.keeping} (instead of \code{cost.unit.keeping}) can be specified, and no standard errors will be estimated. Default is \code{KM}.
   }
   \item{lambda}{
     The smoothing parameter used by method \code{NNE} (see documentation of package \code{survivalROC}). Default is 0.05.
@@ -42,7 +42,7 @@ surv_enrichment(formula, data, hr = 0.8, end.of.trial=NULL, a=NULL, f=NULL,
     (Optional) the cost of measuring the biomarker for each patient to determine eligibility for the trial.
   }
   \item{cost.keeping}{
-    (Optional) the cost of enrolling and retaining a patient in a trial. If specified for a trial with accrual and follow-up periods, it is treated as the median cost for one patient under such design, and is used for all patients in the trial.
+    (Optional) the cost of enrolling and retaining a patient in a trial. If specified for a trial with accrual and follow-up periods, it is treated as the "average" cost for one patient under such design, and is used for all patients in the trial.
   }
   \item{cost.unit.keeping}{
     (Optional) the cost of enrolling and retaining a patient per unit time in the trial. Can be specified as an alternative to \code{cost.keeping}, assuming that patients who experienced a clinical event no longer cost in the trial.
@@ -90,7 +90,7 @@ surv_enrichment(formula, data, hr = 0.8, end.of.trial=NULL, a=NULL, f=NULL,
     Estimated standard errors of the sample sizes.
   }
   \item{n.screened}{
-    The number of patients that need to be screened to enroll enough patients into the trial.
+    The number of patients that need to be screened to enroll the trial.
   }
   \item{n.screened.se}{
     Estimated standard errors of \code{n.screened}.
@@ -146,4 +146,9 @@ rslt3 <- surv_enrichment(formula = surv~x2, data = SurvMarkers, hr = 0.8, end.of
                          method = "NNE", power = 0.9, alpha = 0.05, one.sided = F,
                          selected.biomarker.quantiles = seq(from = 0, to = 0.9, by = 0.1),
                          do.bootstrap = FALSE, print.summary.tables = FALSE)
+}
+\references{
+  Heagerty, Patrick J., Thomas Lumley, and Margaret S. Pepe. "Time-dependent ROC curves for censored survival data and a diagnostic marker." Biometrics 56.2 (2000): 337-344.
+
+  Heagerty, Patrick J., Paramita Saha-Chaudhuri, and Maintainer Paramita Saha-Chaudhuri. "Package 'survivalROC'." (2013).
 }
