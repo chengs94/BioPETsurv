@@ -43,17 +43,9 @@ surv_plot_enrichment <- function (x, km.quantiles = c(0,0.25,0.5,0.75),
   colnames(dat) <- "time"
   for (j in 1:length(km.quantiles)){
     q <- quantile(x$biomarker,prob=km.quantiles[j])
-    if (x$method=="KM"){
-      sobj <- x$response[x$biomarker>=q]
-      km <- survfit(sobj~1,error="greenwood")
-      survfun <- stepfun(km$time, c(1, km$surv))
-    }
-    if (x$method=="NNE"){
-      # POTENTIAL CHANGE NEEDED HERE
-      sobj <- x$response[x$biomarker>=q]
-      km <- survfit(sobj~1,error="greenwood")
-      survfun <- stepfun(km$time, c(1, km$surv))
-    }
+    sobj <- x$response[x$biomarker>=q]
+    km <- survfit(sobj~1,error="greenwood")
+    survfun <- stepfun(km$time, c(1, km$surv))
     dat <- cbind(dat, survfun(dat[,1]))
     colnames(dat)[j+1] <- paste(j,"surv",sep=".")
   }
