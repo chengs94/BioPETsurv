@@ -156,7 +156,7 @@ surv_enrichment <- function (formula, data, hr = 0.8, end.of.trial=NULL, a=NULL,
     q <- quantile(biomarker,prob=enr.level)
     nne <- survROC(Stime=response[,1], status=response[,2], marker=biomarker,
                    predict.time=eot, cut.values=q,
-                   method = method, lambda = lambda)
+                   method = method, lambda = lambda)$Sx
     return(eprob = 1-nne)
   }
 
@@ -402,6 +402,6 @@ surv_enrichment <- function (formula, data, hr = 0.8, end.of.trial=NULL, a=NULL,
               cost.reduction=reduc, cost.reduction.se=sd.reduc,
               response=response, biomarker=biomarker, biomarker.name=biomarker.name,
               selected.biomarker.quantiles=selected.biomarker.quantiles,
-              end.of.trial=end.of.trial,
-              a=a, f=f, acc.fu=acc.fu))
+              end.of.trial=end.of.trial, a=a, f=f, acc.fu=acc.fu,
+              method=method))
 }

@@ -91,6 +91,11 @@ sim.data$t <- sim.data$time_ckdipe + rnorm(nrow(sim.data),mean=0,sd=3)
 sim.data$t[sim.data$t<0] <- 1
 sim.data$newsurv <- Surv(sim.data$t, as.numeric(sim.data$ckdipe))
 sim.data$x2 <- -sim.data$time_ckdipe + rnorm(nrow(sim.data),mean=0,sd=20)
+
+SurvMarkers <- sim.data[,c(11,10,13,16)]
+colnames(SurvMarkers) <- c("time","event","x1","x2")
+SurvMarkers$event <- as.numeric(SurvMarkers$event)-1
+
 sim.data <- sim.data[,c(13,16,15)]
 sim.data$x1 <- (sim.data$x1-mean(sim.data$x1))/sd(sim.data$x1)
 sim.data$x2 <- (sim.data$x2-mean(sim.data$x2))/sd(sim.data$x2)

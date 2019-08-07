@@ -43,9 +43,17 @@ surv_plot_enrichment <- function (x, km.quantiles = c(0,0.25,0.5,0.75),
   colnames(dat) <- "time"
   for (j in 1:length(km.quantiles)){
     q <- quantile(x$biomarker,prob=km.quantiles[j])
-    sobj <- x$response[x$biomarker>=q]
-    km <- survfit(sobj~1,error="greenwood")
-    survfun <- stepfun(km$time, c(1, km$surv))
+    if (x$method=="KM"){
+      sobj <- x$response[x$biomarker>=q]
+      km <- survfit(sobj~1,error="greenwood")
+      survfun <- stepfun(km$time, c(1, km$surv))
+    }
+    if (x$method=="NNE"){
+      # POTENTIAL CHANGE NEEDED HERE
+      sobj <- x$response[x$biomarker>=q]
+      km <- survfit(sobj~1,error="greenwood")
+      survfun <- stepfun(km$time, c(1, km$surv))
+    }
     dat <- cbind(dat, survfun(dat[,1]))
     colnames(dat)[j+1] <- paste(j,"surv",sep=".")
   }
@@ -129,7 +137,7 @@ surv_plot_enrichment <- function (x, km.quantiles = c(0,0.25,0.5,0.75),
     #xlab("level of enrichment") + ylab("total sample size") +
     expand_limits(y=0) +
     #ggtitle("Clinical trial total sample size") +
-    labs(title ="Clinical trial total sample size",
+    labs(title ="Clinical trial sample size",
          x = "level of enrichment", y = "total sample size", color = "end of trial") +
     scale_color_manual(labels = as.character(x$end.of.trial), values = gg_color_hue(length(end.of.trial))) +
     theme(plot.title = element_text(hjust = 0.5), legend.position=len.pos)

@@ -78,5 +78,5 @@ survROC <- function (Stime, status, marker, entry = NULL, predict.time,
     #n <- length(times)
     Sx <- sum(S.all.x[x > cut.values])/sum(x > cut.values)
   }
-  return(Sx)
+  return(list(Sx=Sx, S.t.x=S.t.x, x.unique=x.unique))
 }
