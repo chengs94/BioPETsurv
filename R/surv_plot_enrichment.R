@@ -90,10 +90,10 @@ surv_plot_enrichment <- function (x, km.quantiles = c(0,0.25,0.5,0.75),
     #if (length(x$end.of.trial)==1)
     #  tt <- paste("Event rate at",x$end.of.trial,"months")
     #if (length(x$end.of.trial)>1)
-      tt <- "Event rate at the end of trial"
+      tt <- "Event rate"
   }
   if (x$acc.fu == T)
-    tt <- "Average event rate by the end of trial"
+    tt <- "Average event rate"
   g2 <- ggplot(dat, aes(x=100*level.enrichment, y=event.prob, colour=end.of.trial)) +
     geom_errorbar(aes(ymin=event.prob-ci, ymax=event.prob+ci),
                   width=.05*length(x$end.of.trial)*sd(x$selected.biomarker.quantiles*100)*plot.error.bar) +
