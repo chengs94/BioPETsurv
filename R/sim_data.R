@@ -46,9 +46,8 @@ sim_data <- function(n = 500, covariates = NULL, beta = NULL, biomarker = "norma
     if (baseline.hazard=="increasing"){
       if (is.null(shape)){
         k <- 2
+      } else if (shape <= 1){
         print("No Weibull shape parameter specified; defaults to shape = 2")
-      }
-      if (shape <= 1){
         stop("Weibull shape should >1 for an increasing baseline hazard")
       }
       else k <- shape
@@ -57,8 +56,7 @@ sim_data <- function(n = 500, covariates = NULL, beta = NULL, biomarker = "norma
       if (is.null(shape)){
         k <- 0.5
         print("No Weibull shape parameter specified; defaults to shape = 0.5")
-      }
-      if (shape >= 1){
+      } else if (shape >= 1){
         stop("Weibull shape should <1 for a decreasing baseline hazard")
       }
       else k <- shape
