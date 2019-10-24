@@ -2,14 +2,10 @@
 library(ggplot2)
 library(survival)
 
-sim_data <- function(n = 500, covariates = NULL, beta = NULL, biomarker = "normal", effect.size = 0.25,
+sim_data <- function(n = 500, biomarker = "normal", effect.size = 0.25,
                      baseline.hazard = "constant", end.time = 10, end.survival = 0.5, shape = NULL,
                      seed = 2333){
   # effect size is log(HR) when sd(biomarker)=1
-  if (!is.null(covariates) & !is.null(beta)){
-    if (nrow(covariates)!=n | ncol(covariates)!=length(beta))
-      stop("Invalid dimension of covariates (# rows should match the sample size n, # cols should match the dimension of beta)")
-  }
   if (!baseline.hazard %in% c("constant","increasing","decreasing")){
     stop("Invalid type of baseline hazard (should be constant/increasing/decreasing)")
   }
@@ -24,16 +20,18 @@ sim_data <- function(n = 500, covariates = NULL, beta = NULL, biomarker = "norma
   set.seed(seed)
   biom <- rnorm(n)
   if (biomarker=="lognormal") biom <- (exp(biom)-mean(exp(biom)))/sd(exp(biom))
-  X <- cbind(biom, covariates)
-  colnames(X)[1] <- "biomarker"
-  if (ncol(X)>1){
-    colnames(X) <- c("biomarker",paste("x",seq(1:(ncol(X)-1)),sep=""))
+  X <- biom
+  #colnames(X) <- "biomarker"
+  #if (ncol(X)>1){
+  #  colnames(X) <- c("biomarker",paste("x",seq(1:(ncol(X)-1)),sep=""))
     #b.scale <- apply(X,2,sd)
     #X.scaled <- cbind(X[,1],apply(X,2,function(x) (x-mean(x))/sd(x))[,-1])
     #beta.scaled <- beta/b.scale[-1]
-  }
-  b <- matrix(c(effect.size, beta),ncol=1)
-  Xb <- X%*%b
+  #}
+  #b <- matrix(c(effect.size, beta),ncol=1)
+  b <- effect.size
+  #Xb <- X%*%b
+  Xb <- X*b
   hr <- exp(Xb)
   if (baseline.hazard=="constant"){
     lambda.surv <- -log(end.survival)/end.time
@@ -72,9 +70,11 @@ sim_data <- function(n = 500, covariates = NULL, beta = NULL, biomarker = "norma
   event <- apply(cbind(t.surv,t.cens), 1, function(vec) as.numeric(vec[1]<vec[2]))
   t.obs[t.obs>end.time] <- end.time
   event[t.obs==end.time] <- 0
-  dat <- cbind(X,t.obs,event,t.surv,t.cens)
+  #dat <- cbind(X,t.obs,event,t.surv,t.cens)
+  dat <- cbind(X,t.obs,event,t.surv)
   dat <- as.data.frame(dat)
-  colnames(dat)[(ncol(X)+1):ncol(dat)] <- c("time.observed","event","time.event","time.censoring")
+  colnames(dat) <- c("biomarker","time.observed","event","time.event")
+  #colnames(dat)[(ncol(X)+1):ncol(dat)] <- c("time.observed","event","time.event","time.censoring")
 
   # plotting the K-M curve
   cols <- gray.colors(7)
