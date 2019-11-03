@@ -2,7 +2,7 @@
 library(ggplot2)
 library(survival)
 
-sim_data <- function(n = 500, biomarker = "normal", effect.size = 0.25,
+sim_data <- function(n = 500, biomarker = "normal", effect.size = 0.5,
                      baseline.hazard = "constant", end.time = 10, end.survival = 0.5, shape = NULL,
                      seed = 2333){
   # effect size is log(HR) when sd(biomarker)=1
@@ -29,7 +29,7 @@ sim_data <- function(n = 500, biomarker = "normal", effect.size = 0.25,
     #beta.scaled <- beta/b.scale[-1]
   #}
   #b <- matrix(c(effect.size, beta),ncol=1)
-  b <- effect.size
+  b <- log(effect.size)
   #Xb <- X%*%b
   Xb <- X*b
   hr <- exp(Xb)
