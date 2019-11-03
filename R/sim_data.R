@@ -2,7 +2,7 @@
 library(ggplot2)
 library(survival)
 
-sim_data <- function(n = 500, biomarker = "normal", effect.size = 0.5,
+sim_data <- function(n = 500, biomarker = "normal", effect.size = 1.25,
                      baseline.hazard = "constant", end.time = 10, end.survival = 0.5, shape = NULL,
                      seed = 2333){
   # effect size is log(HR) when sd(biomarker)=1
