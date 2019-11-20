@@ -1,0 +1,209 @@
+---
+title: 'Biomarker Prognostic Enrichment Tool for Clinical Trial
+    with Survival Outcomes'
+subtitle: 'A tutorial for R package BioPETsurv'
+author: "Si Cheng"
+date: "Sep 29, 2019"
+output: html_document
+---
+
+<style type="text/css">
+
+body{ /* Normal  */
+      font-size: 14px;
+}
+h1.title { 
+  font-size: 32px;
+} 
+</style>
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(knitr)
+setwd("C:/Users/Si Cheng/OneDrive - UW/19winter/biomarker/SurvPET/")
+#setwd("C:/Users/Si Cheng/OneDrive - UW/kidney_biomarker/suppl/")
+```
+
+**Update in the newest version (v4, 9/2019)**
+Added the functionality of simulating datasets containing biomarker and survival observations. The R function currently allows for constant baseline hazard.
+
+**Update history**
+v3, 5/21/2019:
+Incorporated an alternative method for calculating event rates. The method comes from Heagerty et al (2013), and uses a kernel smoothed version of Kaplan-Meier survival estimators. This method allows the censoring process to be dependent on the biomarker, and guarantees monotone ROC curves (if the user is interested in the prognostic capacity of a biomarker represented by time-dependent ROC curves).
+
+Prognostic Enrichment is a clinical trial strategy of evaluating an intervention in a patient population with a higher rate of the unwanted event than the broader patient population (R. Temple (2010) <DOI:10.1038/clpt.2010.233>). A higher event rate translates to a lower sample size for the clinical trial, which can have both practical and ethical advantages. The package ```BioPET-Surv``` provides tools to evaluate biomarkers for prognostic enrichment of clinical trials with survival or time-to-event outcomes. (Most parts of this paragraph come from the documentation of ```BioPET```)
+
+Key functions of this package are:
+
+* ```sim_data```: Simulate a dataset containing biomarker and survival observations
+* ```surv_enrichment```: Estimate trial characteristics at different levels of enrichment, given a biomarker (which can be a single biomarker or a composite)
+* ```surv_plot_enrichment```: Visualize trial characteristics returned by ```surv_enrichment```
+
+### Loading the functions and data
+```{r,warning=F}
+### The first two lines are from the legacy GitHub repository "SurvPET"
+#source("https://raw.githubusercontent.com/chengs94/SurvPET/master/surv_enrichment.R")
+#source("https://raw.githubusercontent.com/chengs94/SurvPET/master/surv_plot_enrichment.R")
+source("https://raw.githubusercontent.com/chengs94/BioPETsurv/master/R/surv_enrichment.R")
+source("https://raw.githubusercontent.com/chengs94/BioPETsurv/master/R/surv_plot_enrichment.R")
+source("https://raw.githubusercontent.com/chengs94/BioPETsurv/master/R/sim_data.R")
+load("sim_data.RData")
+```
+
+### Simulating a dataset
+To call ```sim_data```:
+
+```
+sim_data(n = 500, covariates = NULL, beta = NULL, biomarker = "normal", effect.size = 0.25,
+         baseline.hazard = "constant", end.time = 10, end.survival = 0.5, prob.censor = 0.2,
+         seed = 2333)
+```
+This function simulates a dataset given distributions of the biomarker and the relation between survival and biomarker values.
+
+Explanation for function arguments:
+
+* ```n``` is the desired sample size
+* ```covariates``` (optional) is a matrix of covariates (in addition to the biomarker of interest) that determines survival. Should be column-standardized.
+* ```beta``` (optional) is the log hazard ratio corresponding to each standardized covariate.
+* ```biomarker``` specifies the distribution of the biomarker, should be either ```normal``` or ```lognormal``` (right-skewed).
+* ```effect.size``` is the log hazard ratio when sd(biomarker)=1
+* ```baseline.hazard``` specifies the shape of the baseline hazard function. Should be ```constant```, ```increasing``` or ```decreasing```
+* ```end.time``` is the end of observation period; survival after this time will be censored
+* ```end.survival``` is the survival probability at time ```end.time```
+* ```prob.censor``` is the probability of censoring (in addition to censoring due to end of observation)
+* ```seed``` is the user-specified random seed for reproducibility
+
+Example: we simulate a dataset with two covariates and a normally-distributed biomarker, with effect size 0.25 (HR=exp(0.25)=1.28) and a constant baseline hazard.
+
+```{r}
+covariates <- matrix(rnorm(500*2), ncol=2)
+beta <- c(0.2, 0.3)
+dat <- sim_data(n=500, covariates = covariates, beta = beta, biomarker = "normal", effect.size = 0.25,
+                baseline.hazard = "constant", end.time = 10, end.survival = 0.5, prob.censor = 0.2)
+head(dat)
+mean(dat$event)
+dat$surv <- Surv(dat$time.observed, dat$event)
+fit <- coxph(surv~biomarker+x1+x2, data=dat)
+summary(fit)
+```
+
+The proportion of censoring and the estimated effect sizes from ```coxph``` match the arguments specified in the function call.
+
+As an alternative to a simulated dataset, the user can use the built-in dataset, which contains 1533 observations of three variables: two biomarkers ($X_1$ and $X_2$) and the survival outcome (time to event and indicator of event).
+
+```{r}
+head(sim.data)
+```
+
+### Prognostic enrichment with real data
+To call ```surv_enrichment```:
+
+```
+surv_enrichment(formula, data, hr = 0.8, end.of.trial=NULL, a=NULL, f=NULL,
+               method = "KM", lambda = 0.05,
+               cost.screening = NULL, cost.keeping = NULL, cost.unit.keeping = NULL,
+               power = 0.9, alpha = 0.05, one.sided = F,
+               selected.biomarker.quantiles = seq(from = 0, to = 0.95, by = 0.05),
+               do.bootstrap = FALSE, n.bootstrap = 1000, seed = 2333,
+               print.summary.tables = FALSE)
+```
+
+This function applies to two types of trials. 
+
+* All patients are recruited at time 0 and followed to the end of trial (given by ```end.of.trial```, which can be a scalar or vector. If the user inputs a vector of time points, analysis will be done separately for each time point in the vector). 
+    + If ```cost.keeping``` and ```cost.screening``` are specified, it is assumed that the cost for keeping one patient through the trial is *fixed*, and equals ```cost.keeping```. Standard errors are computed analytically (except for the reduction in cost).
+    + If ```cost.unit.keeping``` and ```cost.screening``` are specified, it is assumed that a patient is excluded from the trial (i.e. no longer costs) if a clinical event occurs. In this case, ```cost.unit.keeping``` is the cost for keeping one patient *per unit time*. Standard errors are computed analytically (except for cost and reduction in cost).
+    + In either case, the length of ```cost.keeping``` or ```cost.unit.keeping``` must be the same as ```end.of.trial```, and each entry corresponds to the cost for trials with a certain duration. Bootstrap will not be conducted in either case.
+
+* Another type of trial has an accrual period ```a``` and a follow-up period ```f``` (so that the patients are followed for between ```f``` and ```a+f``` units of time). The methodology makes the standard assumption of uniform enrollment of patients during the accrual period. 
+    + If ```cost.keeping``` and ```cost.screening``` are specified, the former corresponds to the *average/median* cost for one patient under such design, and is used for all patients in the trial. 
+    + If ```cost.unit.keeping``` and ```cost.screening``` are specified, the former corresponds to the cost *per unit time* for one patient, and we assume each patient is in the trial from recruitment until the clinical event (i.e. no longer costs after a clinical event). 
+    + In either scenario, no analytic formula for standard error is available. Bootstrap standard errors are computed if ```do.bootstrap = T``` is specified.
+
+Explanation for arguments (all are required if not specified otherwise):
+
+* ```formula``` should be of the form ```outcome ~ covariate1 + covariate2 +...```. If multiple covariates are inputed, the package will consider a combined "biomarker" based on a Cox model with all covariates.
+* ```data``` the data frame containing at least a survival outcome (as returned by ```Surv```) and observations of one biomarker
+* ```hr``` is the hazard ratio that the trial seeks to detect. Should be between 0 and 1.
+* ```end.of.trial``` (optional) can be either a scalar or a vector. It gives the duration of a fixed-length trial. Either ```end.of.trial``` or a combination of ```a``` and ```f``` must be specified.
+* ```a``` and ```f``` (optional) are the accrual and follow-up periods respectively. Must be scalar. Either ```a``` and ```f```, or ```end.of.trial```, must be specified.
+* ```method``` (optional) is the method for estimating event probabilities. Default is ```KM```, the Kaplan-Meier survival estimator. The alternative is ```NNE```, a smoothed version of KM estimates, using methods from Heagerty et al (2013). If ```method="NNE"``` is specified: 1) only fixed-length trials, and fixed costs per patient (```cost.keeping```) can be considered; 2) standard errors will not be estimated; 3) smoothing parameter ```lambda``` can be specified, defalut is 0.05.
+* ```cost.screening```, ```cost.keeping``` and ```cost.unit.keeping``` (optional) are the costs as explained above. If either ```cost.screening```, or both of ```cost.keeping``` and ```cost.unit.keeping``` are not specified, costs will not be computed. If both ```cost.keeping``` and ```cost.unit.keeping``` are specified, ```cost.unit.keeping``` is ignored by default.
+* ```power``` and ```alpha``` correspond to the desired power and type I error rate of the trial. Should both be between 0 and 1.
+* ```one.sided``` (optional) is an indicator of whether the test is one-sided. Default is ```FALSE```.
+* ```selected.biomarker.quantiles``` are the levels of enrichment that the user wants to compare.
+* ```do.bootstrap```, ```n.bootstrap``` and ```seed``` (optional) are arguments corresponding to bootstrap for trials with accrual and follow-up. If ```do.bootstrap=F```, bootstrap will not be conducted.
+* ```print.summary.tables``` (optional) is an indicator of whether a summary table for trial characteristics should be printed. Default is ```FALSE```.
+
+Example 1: Use biomarker ```x1``` to enrich the trial, and consider trials lasting 36 and 48 months respectively. All patients are followed for the same duration. The cost for measuring one patient's biomarker level is 50, and the costs for one patient in a 36 and 48-month trial are 800 and 1000 respectively.
+```{r}
+result1 <- surv_enrichment(formula = surv~x1, sim.data, hr = 0.8, end.of.trial = c(36,48),
+                           cost.screening = 50, cost.keeping = c(800,1000),
+                           power = 0.9, alpha = 0.05, one.sided = F,
+                           selected.biomarker.quantiles = seq(from = 0, to = 0.98, by = 0.02),
+                           print.summary.tables = F)
+names(result1)
+```
+
+The output is a list with the contents above. The first argument is the table with summary statistics. The 2nd to 11th elements are estimates and standard errors for: 1) event probability at the end of trial; 2) sample size required; 3) total number of patients to measure for biomarker levels to achieve such sample size; 4) total cost (screening + trial); 5) reduction (%) in cost comparing to no enrichment. These are all matrices, where each row corresponds to one enrichment level, and the columns correspond to different duration of trials.
+
+The last 8 arguments correspond to the input of user. ```acc.fu``` is an indicator of whether this trial is considered as type "accrual + follow-up". 
+
+Example 2: Use biomarker ```x2``` to enrich the trial, which has an accrual period of 24 months and a follow-up period of 24 months. A patient will no longer be in the trial (i.e. no longer costs) after experiencing an event. The cost per month for one patient is 20. Bootstrap standard errors are computed with 200 bootstrap samples (only for illustration, we do not generate a large number of bootstrap draws).
+```{r}
+result2 <- surv_enrichment(formula = surv~x2, sim.data, hr = 0.8, a=24, f=24,
+                           cost.screening = 50, cost.unit.keeping = 20,
+                           power = 0.9, alpha = 0.05, one.sided = F,
+                           selected.biomarker.quantiles = seq(from = 0, to = 0.98, by = 0.02),
+                           do.bootstrap = T, n.bootstrap = 200, seed = 233,
+                           print.summary.tables = T)
+```
+
+Example 3: Use biomarker ```x1``` to enrich the trial, and consider a fixed-length trial lasting 48 months. The cost for measuring one patient's biomarker level is 50, and the costs for one patient is 1000. NNE estimates are used for survival probabilities.
+```{r}
+result3 <- surv_enrichment(formula = surv~x1, sim.data, hr = 0.8, end.of.trial = 48,
+                           method = "NNE", lambda=0.05,
+                           cost.screening = 50, cost.keeping = 1000,
+                           power = 0.9, alpha = 0.05, one.sided = F,
+                           selected.biomarker.quantiles = seq(from = 0, to = 0.9, by = 0.1),
+                           print.summary.tables = T)
+```
+
+### Visualizing results from an enrichment analysis
+
+The function ```surv_plot_enrichment``` makes a set of plots based on an object ```x``` returned by ```surv_enrichment```. To call this function:
+
+```
+surv_plot_enrichment(x, km.quantiles = c(0,0.25,0.5,0.75),
+                    km.range = NULL, alt.color = NULL)
+```
+
+```km.quantiles``` are the levels of enrichment that the user wants to compare in Kaplan-Meier survival curves. ```km.range``` is the range of time in Kaplan-Meier survival plot (taken as the last time point of observation by default). ```alt.color``` allows the user to specify the color of curves (taken as default ```ggplot2``` colors if not specified).
+
+If multiple durations of trials are considered to obtain ```x```, they will be plotted together for comparison. In this situation, the length of ```alt.color``` must match that of ```end.of.trial```. If the user wishes to compare multiple biomarkers/power of trial in the same sets of plots, they can use the outputs from ```surv_enrichment``` and manually construct the plots.
+
+If ```x``` contains standard error estimates, error bars will be added to the plots.
+
+Example 1 cont'd: plots with customized color
+```{r, fig.align='center', fig.height=12, fig.width=8}
+plots1 <- surv_plot_enrichment(result1, alt.color = c("salmon","royalblue"))
+names(plots1)
+```
+
+This function returns six plots: 1) Kaplan-Meier survival curves of patients with biomarker levels above certain quantiles; 2) event rate at the end of trial; 3) sample size required; 4) number of patients that need to be screened; 5) screening + trial cost; 6) reduction in cost. A combination of these six plots will automatically be printed (as above).
+
+Example 2 cont'd: use range $t=0$ to $t=60$ in Kaplan-Meier plot
+```{r, fig.align='center', fig.height=12, fig.width=8}
+plots2 <- surv_plot_enrichment(result2, km.range = 60)
+```
+
+We then conduct a call similar to Example 2, except that biomarker ```x1``` is used. Manually plotting ```result2``` and this result together gives:
+
+```{r, echo=FALSE, out.width="100%", out.height="100%"}
+include_graphics("C:/Users/Si Cheng/OneDrive - UW/19winter/biomarker/SurvPET/temp_plots/SurvPET_sim_example.jpeg")
+```
+
+Example 3 cont'd: plots of trial statistics using NNE estimates.
+```{r, fig.align='center', fig.height=12, fig.width=8}
+plots3 <- surv_plot_enrichment(result3)
+```
