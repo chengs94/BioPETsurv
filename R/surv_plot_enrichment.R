@@ -78,7 +78,6 @@ surv_plot_enrichment <- function (x, km.quantiles = c(0,0.25,0.5,0.75),
     colnames(dat)[(1+length(x$end.of.trial)+j)] <- paste(j, "sd", sep=".")
   }
   dat <- reshape(dat, direction = 'long', timevar = 'end.of.trial',
-                 #varying = colnames(dat)[-1],
                  varying=list(grep("prob", colnames(dat), value=T), grep("sd", colnames(dat), value=T)),
                  times = as.character(seq(1,length(x$end.of.trial))),
                  v.names = c("event.prob", "event.prob.se"),
@@ -87,9 +86,6 @@ surv_plot_enrichment <- function (x, km.quantiles = c(0,0.25,0.5,0.75),
   #pd <- position_dodge(0) # move them .05 to the left and right
   pd <- position_jitter()
   if (x$acc.fu == F){
-    #if (length(x$end.of.trial)==1)
-    #  tt <- paste("Event rate at",x$end.of.trial,"months")
-    #if (length(x$end.of.trial)>1)
       tt <- "Event rate"
   }
   if (x$acc.fu == T)
@@ -108,7 +104,6 @@ surv_plot_enrichment <- function (x, km.quantiles = c(0,0.25,0.5,0.75),
 
   # 3. total sample size
   dat <- as.data.frame(cbind(x$selected.biomarker.quantiles, x$n.patients, x$n.patients.se))
-  #colnames(dat) <- c("level.enrichment", "n.patients", "n.patients.se")
   colnames(dat)[1] <- "level.enrichment"
   for (j in 1:length(x$end.of.trial)){
     colnames(dat)[1+j] <- paste(j,"num", sep=".")
@@ -126,9 +121,7 @@ surv_plot_enrichment <- function (x, km.quantiles = c(0,0.25,0.5,0.75),
                   #position=pd) +
     geom_line() +#position=pd) +
     geom_point() +#position=pd) +
-    #xlab("level of enrichment") + ylab("total sample size") +
     expand_limits(y=0) +
-    #ggtitle("Clinical trial total sample size") +
     labs(title ="Clinical trial sample size",
          x = "level of enrichment", y = "total sample size", color = "end of trial") +
     scale_color_manual(labels = as.character(x$end.of.trial), values = gg_color_hue(length(end.of.trial))) +
@@ -193,10 +186,6 @@ surv_plot_enrichment <- function (x, km.quantiles = c(0,0.25,0.5,0.75),
       colnames(dat)[1+j] <- paste(j,"num", sep=".")
       colnames(dat)[(1+length(x$end.of.trial)+j)] <- paste(j, "sd", sep=".")
     }
-    #if (reduc.error.bar){
-    #  dat <- cbind(dat,x$cost.reduction.se)
-    #  colnames(dat)[j+2] <- paste(j, "sd", sep=".")
-    #}
     dat <- reshape(dat, direction = 'long', timevar = 'end.of.trial',
                    varying=list(grep("num", colnames(dat), value=T), grep("sd", colnames(dat), value=T)),
                    times = as.character(seq(1,length(end.of.trial))),

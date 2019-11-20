@@ -48,11 +48,15 @@ A grid containing either the first 4 or 6 plots described below.
 }
 \examples{
 ## Following the example of 'surv_enrichment':
+library(survival)
+library(ggplot2)
+library(gridExtra)
+
 data(SurvMarkers)
 SurvMarkers$surv <- Surv(SurvMarkers$time, SurvMarkers$event)
 rslt1 <- surv_enrichment(formula = surv~x2, data = SurvMarkers, hr = 0.8, end.of.trial=c(36,48),
                          cost.screening = 300, cost.keeping = c(4000,5000), cost.unit.keeping = NULL,
-                         method = "KM", power = 0.9, alpha = 0.05, one.sided = F,
+                         method = "KM", power = 0.9, alpha = 0.05, one.sided = FALSE,
                          selected.biomarker.quantiles = seq(from = 0, to = 0.9, by = 0.1),
                          do.bootstrap = FALSE, print.summary.tables = FALSE)
 ## Truncate the range of x axis in the Kaplan-Meier plot to 0-60 months, and use colors 'salmon' and 'royalblue' for 36- and 48-month trials respectively.

@@ -1,11 +1,4 @@
-# TO DO:
-## double-sided (done 2/18)
-## loss of follow-up
-## negative concordance (not necessary)
-
 library(survival)
-#library(PWEALL)
-#source("https://raw.githubusercontent.com/chengs94/BioPETsurv/master/R/survROC.R")
 
 survROC <- function (Stime, status, marker, entry = NULL, predict.time,
                      cut.values = NULL, method = "NNE", lambda = NULL, span = NULL,
